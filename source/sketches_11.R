@@ -2,7 +2,7 @@
 # set up ------------------------------------------------------------------
 
 name <- "sketches"
-version <- 10
+version <- 11
 
 # define common helper functions & core tools
 source(here::here("source", "common.R"), echo = FALSE)
@@ -182,29 +182,31 @@ make_sketch <- function(seed, name, version) {
   palette <- sample(palette)
   n_ribbons <- 500L
   angle <- runif(1, min = 0, max = 2*pi)
-  x_focus_1 <- runif(1, min = -2, max = 2)
-  y_focus_1 <- runif(1, min = -2, max = 2)
-  #x_focus_2 <- runif(1, min = -2, max = 2)
-  #y_focus_2 <- runif(1, min = -2, max = 2)
-  pull_1 <- runif(1)
-  pull_2 <- runif(1)
-  pull_3 <- runif(1)
+  pull <- .1
+  x_mid <- runif(1, min = -2, max = 2)
+  y_mid <- runif(1, min = -2, max = 2)
+
 
   values <- tibble::tibble(
-    x = rnorm(n_ribbons, sd = 2),
-    y = rnorm(n_ribbons, sd = 2),
-    xend = x + cos(angle) * 1.2,
-    yend = y + sin(angle) * 1.2,
-    xctr_1 = ((1 - pull_3) * x + pull_3 * xend) + pull_1 * x_focus_1,
-    yctr_1 = ((1 - pull_3) * y + pull_3 * yend) + pull_1 * y_focus_1,
-    xctr_2 = (x + xend) / 2 + pull_2 * runif(n_ribbons, min = -2, max = 2),
-    yctr_2 = (y + yend) / 2 + pull_2 * runif(n_ribbons, min = -2, max = 2),
-    width = runif(n_ribbons, min = .01, max = .4),
+    theta_1 = runif(n_ribbons, min = 0, max = 2 * pi),
+    theta_2 = theta_1 + runif(n_ribbons, min = 0, max = pi/2),
+    radius = rbeta(n_ribbons, 3, 3) * 6,
+    x = radius * cos(theta_1) + x_mid,
+    y = radius * sin(theta_1) + y_mid,
+    xend = radius * cos(theta_2) + x_mid,
+    yend = radius * sin(theta_2) + y_mid,
+    xctr_1 = radius * 1.2 * cos((theta_1 + theta_2) / 2) + x_mid,
+    yctr_1 = radius * 1.2 * sin((theta_1 + theta_2) / 2) + y_mid,
+    xctr_2 = (x + xend) / 2 + pull * runif(n_ribbons, min = -2, max = 2),
+    yctr_2 = (y + yend) / 2 + pull * runif(n_ribbons, min = -2, max = 2),
+    width = runif(n_ribbons, min = .01, max = .5)/sqrt(radius),
     smooth = 6L,
     n = 100L,
     fill = sample(palette, n_ribbons, replace = TRUE),
     color = fill
   )
+
+  values <- dplyr::select(values, -theta_1, -theta_2, -radius)
 
   # list of things to draw
   drawables <- purrr::pmap(values, bezier_ribbon)
